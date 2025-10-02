@@ -1,0 +1,28 @@
+{
+  "name": "edapt-adk-server",
+  "version": "1.0.0",
+  "description": "Edapt AI Agent Backend using Google ADK",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["adk", "gemini", "ai-agent", "education"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@google/genai-adk": "^0.1.0",
+    "@google/generative-ai": "^0.21.0",
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "pdfjs-dist": "^4.9.155",
+    "canvas": "^2.11.2",
+    "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}
