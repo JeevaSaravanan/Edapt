@@ -3,9 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Progress } from "@/components/ui/progress";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Play, Pause, Square, Volume2, VolumeX, Mic, FileText } from "lucide-react";
+import { Play, Pause, RotateCcw, Volume2, VolumeX, Headphones, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 interface AudioControlsProps {
@@ -15,134 +14,140 @@ interface AudioControlsProps {
 export const AudioControls = ({ content }: AudioControlsProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState([80]);
-  const [speed, setSpeed] = useState("1");
-  const [voice, setVoice] = useState("default");
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
   const [transcript, setTranscript] = useState<string[]>([]);
-  const speechRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const progressInterval = useRef<NodeJS.Timeout | null>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  // Derivative intuition transcript
+  const derivativeTranscript = [
+    "[0:00 - 0:10] You're driving down the highway, and your speedometer reads 60 miles per hour. But here's a puzzling question: what does that number actually mean right now, at this exact instant?",
+    "[0:11 - 0:20] Speed is distance divided by time. But at a single frozen moment, no time has passed and no distance has been covered. So how can you have a speed? This paradox stumped mathematicians for two thousand years.",
+    "[0:21 - 0:30] Newton and Leibniz had a brilliant insight in the 1600s: you can't measure an instant directly, but you can get infinitely close to it.",
+    "[0:31 - 0:50] Imagine calculating your average speed over one minute. Then over one second. Then over one millisecond. As you shrink the time interval closer and closer to zero, your average speed approaches a specific number. That number—the one you're approaching but never quite calculating with actual zero time—is your instantaneous speed. That's a derivative.",
+    "[0:51 - 1:05] Here's another way to see it. Draw a curve on paper. Pick a point on it, then pick another point nearby. Connect them with a straight line. That line's slope tells you the average rate of change between those points.",
+    "[1:06 - 1:20] Now slide the second point closer... closer... infinitely close. The line rotates until it just barely kisses the curve at a single point—it becomes a tangent line. The slope of that tangent line is the derivative.",
+    "[1:21 - 1:30] A derivative measures how fast something is changing at a precise moment. It's the instantaneous rate of change.",
+    "[1:31 - 1:50] Position changing over time? The derivative is velocity. Velocity changing? The derivative is acceleration. A hillside's height changing? The derivative is the steepness. Temperature changing? The derivative tells you how fast it's rising or falling.",
+    "[1:51 - 2:05] For the simple function f of x equals x squared, the derivative is f prime of x equals 2x. At any point, the curve's steepness is exactly twice the x-value. At x equals zero, it's flat. At x equals 2, it's rising with a slope of 4.",
+    "[2:06 - 2:25] Before derivatives, we could only understand average behavior. With derivatives, we can analyze change with perfect precision at every single point. This unlocked modern physics, engineering, economics, and nearly every field that deals with change and motion.",
+    "[2:26 - 2:40] The derivative is our mathematical way of capturing something profound: the rate of change in an ever-changing world. It lets us freeze a moment and ask, what's happening right now? That simple question, and its answer, changed everything."
+  ];
 
   useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => {
+      const prog = (audio.currentTime / audio.duration) * 100;
+      setProgress(prog);
+      setCurrentTime(audio.currentTime);
+    };
+
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration);
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+      toast.success("Narration completed");
+    };
+
+    const handlePlay = () => {
+      setIsPlaying(true);
+      if (transcript.length === 0) {
+        setTranscript(derivativeTranscript);
+      }
+    };
+
+    const handlePause = () => {
+      setIsPlaying(false);
+    };
+
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
+    audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('play', handlePlay);
+    audio.addEventListener('pause', handlePause);
+
     return () => {
-      if (progressInterval.current) {
-        clearInterval(progressInterval.current);
-      }
-      speechSynthesis.cancel();
+      audio.removeEventListener('timeupdate', handleTimeUpdate);
+      audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
+      audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('play', handlePlay);
+      audio.removeEventListener('pause', handlePause);
     };
-  }, []);
+  }, [transcript.length]);
 
-  const handlePlay = () => {
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (audio) {
+      audio.volume = isMuted ? 0 : volume[0] / 100;
+    }
+  }, [volume, isMuted]);
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const handlePlayPause = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
     if (isPlaying) {
-      speechSynthesis.pause();
-      setIsPlaying(false);
-      if (progressInterval.current) {
-        clearInterval(progressInterval.current);
-      }
-      return;
+      audio.pause();
+      toast.info("Narration paused");
+    } else {
+      audio.play();
+      toast.success("Playing narration");
     }
-
-    if (speechSynthesis.paused && speechRef.current) {
-      speechSynthesis.resume();
-      setIsPlaying(true);
-      startProgressTracking();
-      return;
-    }
-
-    // Extract key concepts for narration
-    const concepts = [
-      "Photosynthesis is the process by which plants convert light energy into chemical energy.",
-      "The process involves two main stages: light-dependent reactions and the Calvin cycle.",
-      "Light reactions occur in thylakoids and produce ATP and NADPH.",
-      "The Calvin cycle takes place in the stroma and produces glucose.",
-      "This process is essential for life on Earth as it produces oxygen and food."
-    ];
-
-    setTranscript(concepts);
-    const textToRead = concepts.join(" ");
-    const estimatedDuration = (textToRead.length / 15) * 1000; // Rough estimate
-    
-    const utterance = new SpeechSynthesisUtterance(textToRead);
-    utterance.rate = parseFloat(speed);
-    utterance.volume = isMuted ? 0 : volume[0] / 100;
-    
-    utterance.onstart = () => {
-      setIsPlaying(true);
-      setProgress(0);
-      startProgressTracking();
-      toast.success("Started narration");
-    };
-    
-    utterance.onend = () => {
-      setIsPlaying(false);
-      setProgress(100);
-      if (progressInterval.current) {
-        clearInterval(progressInterval.current);
-      }
-      toast.info("Narration completed");
-    };
-    
-    utterance.onerror = () => {
-      setIsPlaying(false);
-      if (progressInterval.current) {
-        clearInterval(progressInterval.current);
-      }
-      toast.error("Error during narration");
-    };
-
-    speechRef.current = utterance;
-    speechSynthesis.speak(utterance);
   };
 
-  const startProgressTracking = () => {
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-    }
-    progressInterval.current = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          if (progressInterval.current) {
-            clearInterval(progressInterval.current);
-          }
-          return 100;
-        }
-        return prev + 1;
-      });
-    }, 500);
-  };
-
-  const handleStop = () => {
-    speechSynthesis.cancel();
-    setIsPlaying(false);
+  const handleReset = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    
+    audio.pause();
+    audio.currentTime = 0;
     setProgress(0);
-    setTranscript([]);
-    if (progressInterval.current) {
-      clearInterval(progressInterval.current);
-    }
-    toast.info("Narration stopped");
+    setCurrentTime(0);
+    setIsPlaying(false);
+    toast.info("Narration reset");
   };
 
   const toggleMute = () => {
     setIsMuted(!isMuted);
-    if (speechRef.current) {
-      speechRef.current.volume = isMuted ? volume[0] / 100 : 0;
-    }
+    toast.info(isMuted ? "Unmuted" : "Muted");
   };
 
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Mic className="w-5 h-5 text-accent" />
+          <Headphones className="w-5 h-5 text-accent" />
           Audio Narration
         </CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Derivative Explanation - Intuitive Approach
+        </p>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Hidden Audio Element */}
+        <audio
+          ref={audioRef}
+          src="/media/audio/narration/derivative_intuition_narration.mp3"
+          preload="metadata"
+        />
+
         {/* Progress Bar */}
         <div className="space-y-2">
           <div className="flex justify-between text-sm text-muted-foreground">
             <span>Progress</span>
-            <span>{Math.round(progress)}%</span>
+            <span>{formatTime(currentTime)} / {formatTime(duration)}</span>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
@@ -150,76 +155,61 @@ export const AudioControls = ({ content }: AudioControlsProps) => {
         {/* Playback Controls */}
         <div className="flex gap-2">
           <Button 
-            onClick={handlePlay} 
+            onClick={handlePlayPause} 
             variant={isPlaying ? "secondary" : "default"}
             className="flex-1"
+            size="lg"
           >
-            {isPlaying ? <Pause className="w-4 h-4 mr-2" /> : <Play className="w-4 h-4 mr-2" />}
-            {isPlaying ? "Pause" : "Play"}
+            {isPlaying ? (
+              <>
+                <Pause className="w-4 h-4 mr-2" />
+                Pause
+              </>
+            ) : (
+              <>
+                <Play className="w-4 h-4 mr-2" />
+                Play
+              </>
+            )}
           </Button>
           <Button 
-            variant="destructive" 
-            onClick={handleStop} 
-            disabled={!isPlaying && progress === 0}
-            className="px-4"
+            variant="outline" 
+            onClick={handleReset} 
+            disabled={progress === 0}
+            size="lg"
           >
-            <Square className="w-4 h-4 mr-2" />
-            Stop
+            <RotateCcw className="w-4 h-4" />
           </Button>
-          <Button variant="outline" onClick={toggleMute} className="px-4">
+          <Button 
+            variant="outline" 
+            onClick={toggleMute}
+            size="lg"
+          >
             {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
           </Button>
         </div>
 
-        {/* Audio Settings */}
-        <div className="space-y-3">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Volume</label>
-            <div className="flex items-center gap-3">
-              <Volume2 className="w-4 h-4 text-muted-foreground" />
-              <Slider
-                value={volume}
-                onValueChange={setVolume}
-                max={100}
-                step={1}
-                className="flex-1"
-              />
-              <span className="text-sm text-muted-foreground w-10">{volume[0]}%</span>
-            </div>
+        {/* Volume Control */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium">Volume</label>
+          <div className="flex items-center gap-3">
+            <Volume2 className="w-4 h-4 text-muted-foreground" />
+            <Slider
+              value={volume}
+              onValueChange={setVolume}
+              max={100}
+              step={1}
+              className="flex-1"
+              disabled={isMuted}
+            />
+            <span className="text-sm text-muted-foreground w-10">{volume[0]}%</span>
           </div>
+        </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Speed</label>
-              <Select value={speed} onValueChange={setSpeed}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="0.5">0.5x</SelectItem>
-                  <SelectItem value="0.75">0.75x</SelectItem>
-                  <SelectItem value="1">1x</SelectItem>
-                  <SelectItem value="1.25">1.25x</SelectItem>
-                  <SelectItem value="1.5">1.5x</SelectItem>
-                  <SelectItem value="2">2x</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Voice</label>
-              <Select value={voice} onValueChange={setVoice}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="default">Default</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                  <SelectItem value="male">Male</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+        {/* Audio Info */}
+        <div className="text-xs text-muted-foreground bg-muted p-3 rounded-lg space-y-1">
+          <p className="font-semibold">🎙️ Google Cloud Text-to-Speech</p>
+          <p>Voice: en-US-Neural2-J (Male) • Speed: 0.95x • Duration: 2:37</p>
         </div>
 
         {/* Transcript */}
@@ -229,7 +219,7 @@ export const AudioControls = ({ content }: AudioControlsProps) => {
               <FileText className="w-4 h-4 text-muted-foreground" />
               <label className="text-sm font-medium">Transcript</label>
             </div>
-            <ScrollArea className="h-[200px] w-full rounded-md border bg-muted/30 p-4">
+            <ScrollArea className="h-[300px] w-full rounded-md border bg-muted/30 p-4">
               <div className="space-y-3">
                 {transcript.map((line, index) => (
                   <p key={index} className="text-sm leading-relaxed">

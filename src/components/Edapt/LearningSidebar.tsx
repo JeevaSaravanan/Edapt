@@ -41,7 +41,10 @@ export function LearningSidebar() {
   };
 
   const addNewContent = () => {
-    navigate("/");
+    // Clear current content to show empty state
+    localStorage.removeItem("edapt_current");
+    setCurrentContent(null);
+    window.location.reload();
   };
 
   return (
@@ -61,17 +64,14 @@ export function LearningSidebar() {
             <SidebarGroupContent>
               <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-sm">{currentContent.title}</h3>
+                  <h3 className="font-semibold text-sm">{currentContent.query || currentContent.title}</h3>
                   <Badge variant="secondary" className="bg-success/10 text-success">
                     Active
                   </Badge>
                 </div>
-                <p className="text-sm text-muted-foreground mb-3">
-                  {currentContent.subject} • {currentContent.chapter}
-                </p>
                 <Progress value={75} className="h-2 mb-2" />
                 <div className="text-xs text-muted-foreground">
-                  Progress: Mindmap Generated
+                  Progress: Content Generated
                 </div>
               </div>
             </SidebarGroupContent>
@@ -92,10 +92,10 @@ export function LearningSidebar() {
                 <div className="p-4 text-center">
                   <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    No content uploaded yet
+                    No learning sessions yet
                   </p>
                   <Button variant="outline" size="sm" className="mt-2" onClick={addNewContent}>
-                    Upload First Content
+                    Start New Session
                   </Button>
                 </div>
               ) : (
@@ -113,21 +113,18 @@ export function LearningSidebar() {
                             <BookOpen className="w-4 h-4 text-white" />
                           </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
-                            <h4 className="text-sm font-medium truncate">{item.title}</h4>
-                            <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between mb-1">
+                              <h4 className="text-sm font-medium truncate">{item.query || item.title}</h4>
+                              <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                            </div>
+                            <div className="flex items-center gap-2 mt-2">
+                              <Clock className="w-3 h-3 text-muted-foreground" />
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(item.createdAt).toLocaleDateString()}
+                              </span>
+                            </div>
                           </div>
-                          <p className="text-xs text-muted-foreground truncate">
-                            {item.subject} • {item.chapter}
-                          </p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Clock className="w-3 h-3 text-muted-foreground" />
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(item.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
                       </div>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -155,9 +152,9 @@ export function LearningSidebar() {
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-muted-foreground">Subjects:</span>
+                <span className="text-muted-foreground">Total Queries:</span>
                 <span className="font-medium">
-                  {new Set(contentHistory.map(item => item.subject)).size}
+                  {contentHistory.filter(item => item.query).length}
                 </span>
               </div>
             </div>

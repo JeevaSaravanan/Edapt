@@ -1,0 +1,8 @@
+google-cloud-aiplatform>=1.49.0
+google-cloud-texttospeech>=2.16.0
+fastapi
+uvicorn[standard]
+pydantic
+python-dotenv>=1.0.0
+manim
+pillow

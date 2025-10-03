@@ -1,0 +1,13 @@
+# Google Text-to-Speech Agent Requirements
+
+# Core TTS package
+google-cloud-texttospeech>=2.16.0
+
+# For environment variable management
+python-dotenv>=1.0.0
+
+# For audio file manipulation (optional)
+pydub>=0.25.1
+
+# For audio analysis and synchronization (optional)
+librosa>=0.10.0

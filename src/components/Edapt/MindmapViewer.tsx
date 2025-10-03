@@ -13,30 +13,55 @@ export const MindmapViewer = ({ content }: MindmapViewerProps) => {
   const [currentNode, setCurrentNode] = useState(0);
   const mermaidRef = useRef<HTMLDivElement>(null);
 
-  // Generate mermaid diagram from content
+  // Generate mermaid diagram from content - Derivatives Mindmap
   const generateMermaidDiagram = (text: string) => {
-    const lines = text.split('\n').filter(line => line.trim());
-    const mainTopic = "Photosynthesis";
-    
     return `
     mindmap
-      root((${mainTopic}))
-        Light Reactions
-          Chlorophyll
-          Thylakoids
-          ATP Production
-          NADPH Formation
-          Oxygen Release
-        Calvin Cycle
-          CO2 Fixation
-          Stroma
-          Glucose Formation
-          Energy Consumption
-        Importance
-          Oxygen Production
-          Food Chain Base
-          Climate Regulation
-          Energy Storage
+      root((Derivatives))
+        What Are They?
+          Instantaneous Rate of Change
+          Slope of Tangent Line
+          Limit of Difference Quotient
+        The Derivative Function f'(x)
+          Where the limit exists
+          Higher-order derivatives
+        When Can We Differentiate?
+          Must be continuous first
+          Watch out for these
+            Breaks in the curve
+            Vertical tangents
+            Sharp corners or cusps
+        Rules & Shortcuts
+          Basic Rules
+            Constants become zero
+            Power Rule
+            Constant Multiple
+            Sum & Difference
+            Product Rule
+            Quotient Rule
+          Advanced Techniques
+            Chain Rule
+            Power + Chain combo
+          Special Methods
+            Implicit Differentiation
+            Logarithmic Differentiation
+        Common Functions
+          Trig Functions
+            sin, cos, tan
+          Inverse Trig
+          Exponentials e^x
+          Logarithms ln x
+        Real-World Uses
+          Motion & Movement
+            Velocity
+            Acceleration
+            Speed
+          Business & Economics
+            Marginal Cost
+            Marginal Revenue
+            Marginal Profit
+          Growth & Change
+            Population Growth
     `;
   };
 
@@ -45,12 +70,14 @@ export const MindmapViewer = ({ content }: MindmapViewerProps) => {
       startOnLoad: true,
       theme: 'base',
       themeVariables: {
-        primaryColor: '#3b82f6',
-        primaryTextColor: '#1f2937',
-        primaryBorderColor: '#60a5fa',
-        lineColor: '#6366f1',
-        secondaryColor: '#10b981',
-        tertiaryColor: '#8b5cf6'
+        primaryColor: '#dceaf7',
+        primaryTextColor: '#4b5563',
+        primaryBorderColor: '#c1e5f5',
+        lineColor: '#9ca3af',
+        secondaryColor: '#c2f1c8',
+        tertiaryColor: '#f2cfee',
+        secondaryBorderColor: '#fbe3d6',
+        tertiaryBorderColor: '#d9f2d0'
       }
     });
 
@@ -134,7 +161,7 @@ export const MindmapViewer = ({ content }: MindmapViewerProps) => {
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 bg-primary rounded-full animate-pulse"></div>
               <span className="text-sm text-primary font-medium">
-                Auto-narrating: Light Reactions
+                Auto-narrating: Understanding Derivatives Concept
               </span>
             </div>
           </div>
